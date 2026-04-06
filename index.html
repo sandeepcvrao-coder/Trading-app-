@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sandy's Intraday Desk</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c0f;
+    --surface: #111418;
+    --card: #161b22;
+    --border: #21262d;
+    --green: #00e676;
+    --green-dim: #00e67620;
+    --red: #ff1744;
+    --red-dim: #ff174420;
+    --amber: #ffab00;
+    --amber-dim: #ffab0020;
+    --text: #e6edf3;
+    --muted: #7d8590;
+    --accent: #00e676;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,230,118,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,230,118,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app {
+    position: relative;
+    z-index: 1;
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 20px 16px 80px;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 2px;
+    color: var(--green);
+    text-shadow: 0 0 20px rgba(0,230,118,0.4);
+  }
+
+  .logo span { color: var(--text); }
+
+  .clock {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--muted);
+    background: var(--card);
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+
+  /* Market Status */
+  .market-status {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .status-pill {
+    flex: 1;
+    text-align: center;
+    padding: 8px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--muted);
+  }
+
+  .status-pill.open { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+  .status-pill.closed { background: var(--red-dim); border-color: var(--red); color: var(--red); }
+  .status-pill.caution { background: var(--amber-dim); border-color: var(--amber); color: var(--amber); }
+
+  /* Section Label */
+  .section-label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 14px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    margin-bottom: 10px;
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* Input Card */
+  .input-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+
+  .input-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .input-row:last-child { margin-bottom: 0; }
+
+  .input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .input-group.full { grid-column: 1 / -1; }
+
+  label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  input, select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 15px;
+    padding: 10px 12px;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input:focus, select:focus {
+    border-color: var(--green);
+    box-shadow: 0 0 0 3px rgba(0,230,118,0.1);
+  }
+
+  input::placeholder { color: var(--muted); font-size: 13px; }
+
+  select option { background: var(--card); }
+
+  /* Leverage Selector */
+  .leverage-btns {
+    display: flex;
+    gap: 6px;
+  }
+
+  .lev-btn {
+    flex: 1;
+    padding: 10px 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+
+  .lev-btn.active {
+    background: var(--green-dim);
+    border-color: var(--green);
+    color: var(--green);
+    font-weight: 600;
+  }
+
+  /* Suggest Button */
+  .suggest-btn {
+    width: 100%;
+    padding: 13px;
+    background: transparent;
+    border: 1px dashed var(--amber);
+    border-radius: 10px;
+    color: var(--amber);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 4px;
+    margin-bottom: 8px;
+  }
+  .suggest-btn:hover { background: var(--amber-dim); }
+
+  /* Recommendation Box */
+  .recommend-box {
+    background: var(--card);
+    border: 1px solid var(--amber);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 10px;
+    animation: fadeUp 0.3s ease;
+  }
+
+  .rec-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .rec-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: var(--amber);
+  }
+
+  .rec-close {
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px 6px;
+  }
+
+  .rec-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .rec-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 8px;
+    text-align: center;
+  }
+
+  .rec-item-label {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+
+  .rec-item-value {
+    font-family: 'DM Mono', monospace;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--amber);
+  }
+
+  .rec-item-sub {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .rec-reason {
+    background: var(--surface);
+    border-left: 3px solid var(--amber);
+    border-radius: 0 6px 6px 0;
+    padding: 10px 12px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+    margin-bottom: 10px;
+  }
+
+  .rec-reason strong { color: var(--text); display: block; margin-bottom: 4px; font-size: 12px; }
+
+  .apply-btn {
+    width: 100%;
+    padding: 11px;
+    background: var(--amber-dim);
+    border: 1px solid var(--amber);
+    border-radius: 8px;
+    color: var(--amber);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .apply-btn:hover { background: var(--amber); color: #000; }
+
+  /* Calculate Button */
+  .calc-btn {
+    width: 100%;
+    padding: 16px;
+    background: var(--green);
+    border: none;
+    border-radius: 10px;
+    color: #000;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    letter-spacing: 3px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 4px;
+    box-shadow: 0 0 20px rgba(0,230,118,0.2);
+  }
+
+  .calc-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 0 30px rgba(0,230,118,0.4);
+  }
+
+  .calc-btn:active { transform: translateY(0); }
+
+  /* Results */
+  .results {
+    display: none;
+    animation: fadeUp 0.3s ease;
+  }
+
+  .results.show { display: block; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Result Grid */
+  .result-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .result-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .result-box.profit { border-color: var(--green); background: var(--green-dim); }
+  .result-box.loss { border-color: var(--red); background: var(--red-dim); }
+  .result-box.info { border-color: var(--amber); background: var(--amber-dim); }
+  .result-box.full { grid-column: 1 / -1; }
+
+  .result-label {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .result-box.profit .result-label { color: var(--green); opacity: 0.8; }
+  .result-box.loss .result-label { color: var(--red); opacity: 0.8; }
+  .result-box.info .result-label { color: var(--amber); opacity: 0.8; }
+
+  .result-value {
+    font-family: 'DM Mono', monospace;
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .result-box.profit .result-value { color: var(--green); }
+  .result-box.loss .result-value { color: var(--red); }
+  .result-box.info .result-value { color: var(--amber); }
+
+  .result-sub {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* TSL Table */
+  .tsl-table {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+
+  .tsl-header {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    padding: 10px 14px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tsl-header span {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .tsl-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+
+  .tsl-row:last-child { border-bottom: none; }
+  .tsl-row:hover { background: var(--surface); }
+
+  .tsl-row span {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--text);
+  }
+
+  .tsl-row .locked { color: var(--green); font-weight: 500; }
+  .tsl-row .sl-val { color: var(--amber); }
+
+  /* Quick Guide */
+  .guide-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+
+  .guide-tab-bar {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .guide-tab {
+    flex: 1;
+    padding: 10px 6px;
+    text-align: center;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    border-bottom: 2px solid transparent;
+  }
+
+  .guide-tab.active {
+    color: var(--green);
+    border-bottom-color: var(--green);
+    background: var(--green-dim);
+  }
+
+  .guide-content {
+    padding: 14px;
+    display: none;
+  }
+
+  .guide-content.active { display: block; }
+
+  .guide-item {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    align-items: flex-start;
+  }
+
+  .guide-item:last-child { margin-bottom: 0; }
+
+  .guide-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+
+  .guide-text strong {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+
+  .guide-text p {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* Time Guide */
+  .time-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 8px;
+    align-items: center;
+  }
+
+  .time-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 5px;
+    white-space: nowrap;
+    min-width: 80px;
+    text-align: center;
+  }
+
+  .time-badge.green { background: var(--green-dim); color: var(--green); border: 1px solid var(--green); }
+  .time-badge.red { background: var(--red-dim); color: var(--red); border: 1px solid var(--red); }
+  .time-badge.amber { background: var(--amber-dim); color: var(--amber); border: 1px solid var(--amber); }
+  .time-badge.muted { background: var(--surface); color: var(--muted); border: 1px solid var(--border); }
+
+  .time-desc { font-size: 12px; color: var(--muted); line-height: 1.4; }
+  .time-desc strong { color: var(--text); display: block; margin-bottom: 1px; }
+
+  /* Checklist */
+  .check-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+  }
+
+  .check-item:last-child { border-bottom: none; }
+
+  .checkbox {
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+    border: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    font-size: 11px;
+  }
+
+  .check-item.checked .checkbox {
+    background: var(--green);
+    border-color: var(--green);
+    color: #000;
+  }
+
+  .check-label {
+    font-size: 12px;
+    color: var(--muted);
+    transition: color 0.2s;
+  }
+
+  .check-item.checked .check-label { color: var(--text); }
+
+  /* Reset */
+  .reset-btn {
+    width: 100%;
+    padding: 12px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 4px;
+  }
+
+  .reset-btn:hover { border-color: var(--red); color: var(--red); }
+
+  /* P&L per share highlight */
+  .per-share-strip {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .per-share-strip .label { font-size: 11px; color: var(--muted); font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
+  .per-share-strip .vals { display: flex; gap: 16px; }
+  .per-share-strip .val { font-family: 'DM Mono', monospace; font-size: 13px; }
+  .per-share-strip .val.g { color: var(--green); }
+  .per-share-strip .val.r { color: var(--red); }
+
+  .ticker-strip {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">SANDY<span>'S</span> DESK</div>
+    <div class="clock" id="clock">--:--:-- AM</div>
+  </div>
+
+  <div class="ticker-strip">NSE · INTRADAY · GROWW · 9:30–3:00 PM WINDOW</div>
+
+  <!-- Market Status Indicators -->
+  <div class="market-status">
+    <div class="status-pill" id="pill-nifty" onclick="togglePill(this)">NIFTY ↑</div>
+    <div class="status-pill" id="pill-vol" onclick="togglePill(this)">VOLUME OK</div>
+    <div class="status-pill" id="pill-trend" onclick="togglePill(this)">TREND OK</div>
+  </div>
+
+  <!-- Calculator -->
+  <div class="section-label">⚡ TRADE CALCULATOR</div>
+
+  <div class="input-card">
+    <div class="input-row">
+      <div class="input-group">
+        <label>Stock Name</label>
+        <input type="text" id="stockName" placeholder="e.g. HINDCOPPER" />
+      </div>
+      <div class="input-group">
+        <label>Buy Price (₹)</label>
+        <input type="number" id="buyPrice" placeholder="505.20" step="0.05" />
+      </div>
+    </div>
+    <div class="input-row">
+      <div class="input-group">
+        <label>Capital (₹)</label>
+        <input type="number" id="capital" placeholder="10000" />
+      </div>
+      <div class="input-group">
+        <label>Leverage</label>
+        <div class="leverage-btns">
+          <div class="lev-btn active" onclick="setLev(this,1)">1x</div>
+          <div class="lev-btn" onclick="setLev(this,2)">2x</div>
+          <div class="lev-btn" onclick="setLev(this,5)">5x</div>
+        </div>
+      </div>
+    </div>
+    <div class="input-row">
+      <div class="input-group">
+        <label>SL % (Stoploss)</label>
+        <input type="number" id="slPct" placeholder="1.5" step="0.1" value="1.5" />
+      </div>
+      <div class="input-group">
+        <label>Target %</label>
+        <input type="number" id="tgtPct" placeholder="2.5" step="0.1" value="2.5" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Smart Recommend Button -->
+  <button class="suggest-btn" onclick="autoSuggest()">🤖 AUTO-SUGGEST SL &amp; TRAIL FOR ME</button>
+
+  <!-- Smart Recommendation Box -->
+  <div class="recommend-box" id="recommend-box" style="display:none">
+    <div class="rec-header">
+      <span class="rec-title">🎯 RECOMMENDED FOR YOUR TRADE</span>
+      <span class="rec-close" onclick="document.getElementById('recommend-box').style.display='none'">✕</span>
+    </div>
+    <div class="rec-grid" id="rec-grid"></div>
+    <div class="rec-reason" id="rec-reason"></div>
+    <button class="apply-btn" onclick="applyRecommendation()">✅ APPLY THESE VALUES</button>
+  </div>
+
+  <button class="calc-btn" onclick="calculate()">CALCULATE TRADE</button>
+
+  <!-- Results -->
+  <div class="results" id="results">
+
+    <div class="section-label" style="margin-top:20px">📊 TRADE SUMMARY</div>
+
+    <div class="result-grid">
+      <div class="result-box">
+        <div class="result-label">Buying Power</div>
+        <div class="result-value" id="r-power">—</div>
+        <div class="result-sub" id="r-power-sub">capital × leverage</div>
+      </div>
+      <div class="result-box">
+        <div class="result-label">Total Shares</div>
+        <div class="result-value" id="r-shares">—</div>
+        <div class="result-sub" id="r-shares-sub">qty to buy</div>
+      </div>
+      <div class="result-box">
+        <div class="result-label">Stoploss Price</div>
+        <div class="result-value" id="r-sl">—</div>
+        <div class="result-sub">set on Groww SL-M</div>
+      </div>
+      <div class="result-box">
+        <div class="result-label">Target Price</div>
+        <div class="result-value" id="r-tgt">—</div>
+        <div class="result-sub">exit here ✅</div>
+      </div>
+      <div class="result-box loss full">
+        <div class="result-label">Max Loss (SL hits)</div>
+        <div class="result-value" id="r-loss">—</div>
+        <div class="result-sub" id="r-loss-sub">—</div>
+      </div>
+      <div class="result-box profit full">
+        <div class="result-label">Max Profit (Target hits)</div>
+        <div class="result-value" id="r-profit">—</div>
+        <div class="result-sub" id="r-profit-sub">—</div>
+      </div>
+    </div>
+
+    <!-- Per Share -->
+    <div class="per-share-strip">
+      <div class="label">Per Share</div>
+      <div class="vals">
+        <div class="val r" id="r-loss-per">Loss: —</div>
+        <div class="val g" id="r-profit-per">Profit: —</div>
+      </div>
+    </div>
+
+    <!-- TSL Table -->
+    <div class="section-label">📈 TRAILING STOPLOSS (TSL) GUIDE</div>
+    <div class="tsl-table">
+      <div class="tsl-header">
+        <span>PRICE</span>
+        <span>TRAIL SL</span>
+        <span>LOCKED ₹</span>
+        <span>STATUS</span>
+      </div>
+      <div id="tsl-body"></div>
+    </div>
+
+    <div class="section-label">💡 ZERO-LOSS POINT</div>
+    <div class="result-grid">
+      <div class="result-box info full">
+        <div class="result-label">Move SL to Entry When Price Reaches</div>
+        <div class="result-value" id="r-zeroloss">—</div>
+        <div class="result-sub">After this point → you cannot lose money</div>
+      </div>
+    </div>
+
+    <button class="reset-btn" onclick="resetCalc()">✕ CLEAR & RESET</button>
+  </div>
+
+  <!-- Quick Guide Tabs -->
+  <div class="section-label" style="margin-top:24px">📚 QUICK GUIDE</div>
+  <div class="guide-card">
+    <div class="guide-tab-bar">
+      <div class="guide-tab active" onclick="switchTab(this,'tab-timing')">TIMING</div>
+      <div class="guide-tab" onclick="switchTab(this,'tab-rules')">RULES</div>
+      <div class="guide-tab" onclick="switchTab(this,'tab-checklist')">CHECKLIST</div>
+      <div class="guide-tab" onclick="switchTab(this,'tab-tsl')">TSL TIPS</div>
+    </div>
+
+    <!-- Timing -->
+    <div class="guide-content active" id="tab-timing">
+      <div class="time-row">
+        <div class="time-badge red">9:00–9:15</div>
+        <div class="time-desc"><strong>Pre-Market Watch</strong>Check Nifty pre-open. Red day? Be cautious.</div>
+      </div>
+      <div class="time-row">
+        <div class="time-badge red">9:15–9:30</div>
+        <div class="time-desc"><strong>OBSERVE ONLY</strong>Do NOT buy. Too volatile. Just watch movers.</div>
+      </div>
+      <div class="time-row">
+        <div class="time-badge green">9:30–10:00</div>
+        <div class="time-desc"><strong>BEST ENTRY ✅</strong>Buy here. Momentum is forming, move just started.</div>
+      </div>
+      <div class="time-row">
+        <div class="time-badge green">10:00–1:00</div>
+        <div class="time-desc"><strong>Second Window</strong>Breakout stocks only. Use Near Breakout filter.</div>
+      </div>
+      <div class="time-row">
+        <div class="time-badge amber">1:00–2:30</div>
+        <div class="time-desc"><strong>Manage Existing</strong>No new entries. Manage open trades only.</div>
+      </div>
+      <div class="time-row">
+        <div class="time-badge red">3:00 PM</div>
+        <div class="time-desc"><strong>EXIT ALL ✅</strong>Close every position. Groww auto-squares at 3:20.</div>
+      </div>
+    </div>
+
+    <!-- Rules -->
+    <div class="guide-content" id="tab-rules">
+      <div class="guide-item">
+        <div class="guide-icon">🎯</div>
+        <div class="guide-text">
+          <strong>Max 2 Trades Per Day</strong>
+          <p>Don't overtrade. 2 quality setups beat 10 random ones.</p>
+        </div>
+      </div>
+      <div class="guide-item">
+        <div class="guide-icon">🛑</div>
+        <div class="guide-text">
+          <strong>Set SL Before Entering</strong>
+          <p>Always place SL-M order on Groww BEFORE you buy. Emotion will stop you later.</p>
+        </div>
+      </div>
+      <div class="guide-item">
+        <div class="guide-icon">📉</div>
+        <div class="guide-text">
+          <strong>2 SL Hits = Stop for the Day</strong>
+          <p>If stoploss is triggered twice, walk away. Don't chase losses.</p>
+        </div>
+      </div>
+      <div class="guide-item">
+        <div class="guide-icon">📊</div>
+        <div class="guide-text">
+          <strong>Nifty Green = Buy Trades Only</strong>
+          <p>When Nifty is red, skip buying. Wait for another day.</p>
+        </div>
+      </div>
+      <div class="guide-item">
+        <div class="guide-icon">💧</div>
+        <div class="guide-text">
+          <strong>Only Nifty 500 Stocks</strong>
+          <p>Avoid unknown penny stocks. Stick to liquid, known companies.</p>
+        </div>
+      </div>
+      <div class="guide-item">
+        <div class="guide-icon">🔰</div>
+        <div class="guide-text">
+          <strong>Beginner? Use 1x–2x Leverage Only</strong>
+          <p>Don't use full 5x until you have 6+ months of consistent trading.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Checklist -->
+    <div class="guide-content" id="tab-checklist">
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"></div>
+        <div class="check-label">✅ Nifty is green today (pre-market)</div>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"></div>
+        <div class="check-label">✅ Stock price moving up steadily (not spike)</div>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"></div>
+        <div class="check-label">✅ Volume higher than yesterday at same time</div>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"></div>
+        <div class="check-label">✅ No bad news about this stock today</div>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"></div>
+        <div class="check-label">✅ Entry time is between 9:30–10:00 AM</div>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"></div>
+        <div class="check-label">✅ Stoploss price calculated and ready</div>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"></div>
+        <div class="check-label">✅ SL-M order placed on Groww immediately</div>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"></div>
+        <div class="check-label">✅ Less than 2 trades already today</div>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"></div>
+        <div class="check-label">✅ Will exit by 3:00 PM no matter what</div>
+      </div>
+    </div>
+
+    <!-- TSL Tips -->
+    <div class="guide-content" id="tab-tsl">
+      <div class="guide-item">
+        <div class="guide-icon">📌</div>
+        <div class="guide-text">
+          <strong>What is TSL?</strong>
+          <p>Trailing StopLoss moves UP with price but never moves down. Locks in profit automatically.</p>
+        </div>
+      </div>
+      <div class="guide-item">
+        <div class="guide-icon">🚀</div>
+        <div class="guide-text">
+          <strong>When to Start Trailing</strong>
+          <p>Start trailing only after price rises by ₹10+ from your entry. Before that, keep fixed SL.</p>
+        </div>
+      </div>
+      <div class="guide-item">
+        <div class="guide-icon">📱</div>
+        <div class="guide-text">
+          <strong>Groww has no Auto-TSL</strong>
+          <p>Do it manually. Every ₹5 rise → move SL up by ₹5. Check every 5–10 minutes.</p>
+        </div>
+      </div>
+      <div class="guide-item">
+        <div class="guide-icon">🔒</div>
+        <div class="guide-text">
+          <strong>Zero-Loss Setup</strong>
+          <p>Once price rises ₹10 from entry, move SL to your buy price. Now you can't lose!</p>
+        </div>
+      </div>
+      <div class="guide-item">
+        <div class="guide-icon">⚡</div>
+        <div class="guide-text">
+          <strong>Trail Gap Rule</strong>
+          <p>Keep TSL gap = your original SL amount. If SL was ₹7, trail ₹7 below current price always.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let leverage = 1;
+
+  // Clock
+  function updateClock() {
+    const now = new Date();
+    let h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    document.getElementById('clock').textContent =
+      `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')} ${ampm}`;
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
+
+  // Leverage
+  function setLev(el, val) {
+    document.querySelectorAll('.lev-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    leverage = val;
+  }
+
+  // Market pills
+  function togglePill(el) {
+    if (el.classList.contains('open')) {
+      el.classList.remove('open');
+      el.classList.add('closed');
+    } else if (el.classList.contains('closed')) {
+      el.classList.remove('closed');
+      el.classList.add('caution');
+    } else if (el.classList.contains('caution')) {
+      el.classList.remove('caution');
+    } else {
+      el.classList.add('open');
+    }
+  }
+
+  // Tabs
+  function switchTab(el, tabId) {
+    document.querySelectorAll('.guide-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.guide-content').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById(tabId).classList.add('active');
+  }
+
+  // Checklist
+  function toggleCheck(el) {
+    el.classList.toggle('checked');
+    el.querySelector('.checkbox').textContent = el.classList.contains('checked') ? '✓' : '';
+  }
+
+  // Auto Suggest SL & Trail
+  let suggestedSL = 1.5, suggestedTgt = 2.5, suggestedTrail = 0;
+
+  function autoSuggest() {
+    const buyPrice = parseFloat(document.getElementById('buyPrice').value);
+    const capital = parseFloat(document.getElementById('capital').value);
+
+    if (!buyPrice || !capital) {
+      alert('Please enter Buy Price and Capital first, then tap Auto-Suggest.');
+      return;
+    }
+
+    const buyingPower = capital * leverage;
+    const shares = Math.floor(buyingPower / buyPrice);
+
+    // --- SMART SL LOGIC ---
+    // Rule: Max loss should not exceed 7-8% of capital
+    const maxAllowedLoss = capital * 0.08;
+    const maxLossPerShare = shares > 0 ? maxAllowedLoss / shares : buyPrice * 0.015;
+
+    // SL% based on stock price range
+    let recSL, recTgt, trailGap, slReason, stockType;
+
+    if (buyPrice < 100) {
+      recSL = 1.0; recTgt = 2.0; trailGap = buyPrice * 0.01;
+      stockType = 'Low-price stock (<₹100)';
+      slReason = 'Low-price stocks are volatile. Tight 1% SL protects capital. Trail every ₹' + (buyPrice * 0.01).toFixed(1) + ' move.';
+    } else if (buyPrice < 300) {
+      recSL = 1.2; recTgt = 2.5; trailGap = buyPrice * 0.012;
+      stockType = 'Mid-range stock (₹100–₹300)';
+      slReason = '1.2% SL gives room to breathe without risking too much. Trail every ₹' + (buyPrice * 0.012).toFixed(1) + ' move.';
+    } else if (buyPrice < 600) {
+      recSL = 1.5; recTgt = 2.5; trailGap = buyPrice * 0.015;
+      stockType = 'Mid stock (₹300–₹600)';
+      slReason = '1.5% is the sweet spot for this price range. Not too tight, not too loose. Trail every ₹' + (buyPrice * 0.015).toFixed(1) + ' move.';
+    } else if (buyPrice < 1000) {
+      recSL = 1.5; recTgt = 3.0; trailGap = buyPrice * 0.015;
+      stockType = 'Mid-high stock (₹600–₹1000)';
+      slReason = '1.5% SL with 3% target gives good 1:2 ratio. Trail every ₹' + (buyPrice * 0.015).toFixed(1) + ' move.';
+    } else if (buyPrice < 2000) {
+      recSL = 1.2; recTgt = 2.5; trailGap = buyPrice * 0.012;
+      stockType = 'High-price stock (₹1000–₹2000)';
+      slReason = 'High price = higher ₹ risk. Keep SL at 1.2% to limit loss per share. Trail every ₹' + (buyPrice * 0.012).toFixed(1) + ' move.';
+    } else {
+      recSL = 1.0; recTgt = 2.0; trailGap = buyPrice * 0.01;
+      stockType = 'Premium stock (>₹2000)';
+      slReason = 'Very high price stock — even 1% SL means big ₹ loss. Be very careful. Trail every ₹' + (buyPrice * 0.01).toFixed(1) + ' move.';
+    }
+
+    // Override if calculated max loss per share is tighter
+    const calcSLpct = (maxLossPerShare / buyPrice) * 100;
+    if (calcSLpct < recSL && shares > 0) {
+      recSL = parseFloat(calcSLpct.toFixed(1));
+      slReason = '⚠️ Adjusted tighter because your capital (₹' + capital.toLocaleString('en-IN') + ') limits how much loss you can afford. Keep max loss under 8% of capital.';
+    }
+
+    suggestedSL = recSL;
+    suggestedTgt = recTgt;
+    suggestedTrail = trailGap;
+
+    // Calculate actual values
+    const slPrice = buyPrice * (1 - recSL / 100);
+    const tgtPrice = buyPrice * (1 + recTgt / 100);
+    const lossAmt = shares * (buyPrice - slPrice);
+    const profitAmt = shares * (tgtPrice - buyPrice);
+    const rr = (recTgt / recSL).toFixed(1);
+
+    // Build recommendation box
+    document.getElementById('rec-grid').innerHTML = `
+      <div class="rec-item">
+        <div class="rec-item-label">SL %</div>
+        <div class="rec-item-value">${recSL}%</div>
+        <div class="rec-item-sub">${fmt(slPrice)}</div>
+      </div>
+      <div class="rec-item">
+        <div class="rec-item-label">Target %</div>
+        <div class="rec-item-value">${recTgt}%</div>
+        <div class="rec-item-sub">${fmt(tgtPrice)}</div>
+      </div>
+      <div class="rec-item">
+        <div class="rec-item-label">R:R Ratio</div>
+        <div class="rec-item-value">1:${rr}</div>
+        <div class="rec-item-sub">${rr >= 2 ? '✅ Good' : '⚠️ Okay'}</div>
+      </div>
+      <div class="rec-item">
+        <div class="rec-item-label">Trail Gap</div>
+        <div class="rec-item-value">₹${trailGap.toFixed(1)}</div>
+        <div class="rec-item-sub">per move</div>
+      </div>
+      <div class="rec-item">
+        <div class="rec-item-label">Max Loss</div>
+        <div class="rec-item-value" style="color:var(--red)">-${fmt(lossAmt)}</div>
+        <div class="rec-item-sub">${((lossAmt/capital)*100).toFixed(1)}% of capital</div>
+      </div>
+      <div class="rec-item">
+        <div class="rec-item-label">Max Profit</div>
+        <div class="rec-item-value" style="color:var(--green)">+${fmt(profitAmt)}</div>
+        <div class="rec-item-sub">${((profitAmt/capital)*100).toFixed(1)}% of capital</div>
+      </div>
+    `;
+
+    document.getElementById('rec-reason').innerHTML = `
+      <strong>📌 ${stockType} — Why these values?</strong>
+      ${slReason}<br><br>
+      <strong>🔄 Trail Rule:</strong> Every time price rises by <b style="color:var(--amber)">₹${trailGap.toFixed(1)}</b>, move your SL up by <b style="color:var(--amber)">₹${trailGap.toFixed(1)}</b> on Groww manually.<br>
+      <strong>🔒 Zero-Loss at:</strong> <b style="color:var(--green)">${fmt(buyPrice + (buyPrice * recSL / 100) + 2)}</b> — move SL to entry price once stock reaches here.
+    `;
+
+    document.getElementById('recommend-box').style.display = 'block';
+    document.getElementById('recommend-box').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function applyRecommendation() {
+    document.getElementById('slPct').value = suggestedSL;
+    document.getElementById('tgtPct').value = suggestedTgt;
+    document.getElementById('recommend-box').style.display = 'none';
+    // Flash the inputs
+    ['slPct','tgtPct'].forEach(id => {
+      const el = document.getElementById(id);
+      el.style.borderColor = 'var(--amber)';
+      setTimeout(() => { el.style.borderColor = ''; }, 1500);
+    });
+  }
+
+  // Format currency
+  function fmt(n) {
+    return '₹' + Math.abs(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  // Calculate
+  function calculate() {
+    const stock = document.getElementById('stockName').value || 'STOCK';
+    const buyPrice = parseFloat(document.getElementById('buyPrice').value);
+    const capital = parseFloat(document.getElementById('capital').value);
+    const slPct = parseFloat(document.getElementById('slPct').value) / 100;
+    const tgtPct = parseFloat(document.getElementById('tgtPct').value) / 100;
+
+    if (!buyPrice || !capital) {
+      alert('Please enter Buy Price and Capital');
+      return;
+    }
+
+    const buyingPower = capital * leverage;
+    const shares = Math.floor(buyingPower / buyPrice);
+    const slPrice = buyPrice * (1 - slPct);
+    const tgtPrice = buyPrice * (1 + tgtPct);
+    const lossPerShare = buyPrice - slPrice;
+    const profitPerShare = tgtPrice - buyPrice;
+    const totalLoss = shares * lossPerShare;
+    const totalProfit = shares * profitPerShare;
+    const zeroLossPoint = buyPrice + lossPerShare + 5;
+
+    // Fill results
+    document.getElementById('r-power').textContent = fmt(buyingPower);
+    document.getElementById('r-power-sub').textContent = `₹${capital.toLocaleString('en-IN')} × ${leverage}x`;
+    document.getElementById('r-shares').textContent = shares;
+    document.getElementById('r-shares-sub').textContent = `@ ${fmt(buyPrice)}/share`;
+    document.getElementById('r-sl').textContent = fmt(slPrice);
+    document.getElementById('r-tgt').textContent = fmt(tgtPrice);
+    document.getElementById('r-loss').textContent = `-${fmt(totalLoss)}`;
+    document.getElementById('r-loss-sub').textContent = `${shares} shares × ₹${lossPerShare.toFixed(2)} loss each`;
+    document.getElementById('r-profit').textContent = `+${fmt(totalProfit)}`;
+    document.getElementById('r-profit-sub').textContent = `${shares} shares × ₹${profitPerShare.toFixed(2)} profit each`;
+    document.getElementById('r-loss-per').textContent = `Loss: -₹${lossPerShare.toFixed(2)}`;
+    document.getElementById('r-profit-per').textContent = `Profit: +₹${profitPerShare.toFixed(2)}`;
+    document.getElementById('r-zeroloss').textContent = fmt(zeroLossPoint);
+
+    // TSL Table
+    const tslBody = document.getElementById('tsl-body');
+    tslBody.innerHTML = '';
+    const steps = 6;
+    const stepSize = (tgtPrice - buyPrice) / steps;
+
+    for (let i = 0; i <= steps; i++) {
+      const price = buyPrice + (stepSize * i);
+      const tsl = price - lossPerShare;
+      const locked = (tsl - buyPrice) * shares;
+      const isZeroLoss = tsl >= buyPrice;
+      const isProfit = locked > 0;
+
+      const row = document.createElement('div');
+      row.className = 'tsl-row';
+      row.innerHTML = `
+        <span>${fmt(price)}</span>
+        <span class="sl-val">${fmt(tsl)}</span>
+        <span class="${isProfit ? 'locked' : ''}">${locked >= 0 ? '+' : ''}${fmt(locked)}</span>
+        <span style="font-size:11px;color:${i===0?'var(--muted)':isProfit?'var(--green)':'var(--amber)'}">${
+          i===0 ? 'ENTRY' : isProfit ? '🔒 LOCKED' : '⚠️ TRAIL'
+        }</span>
+      `;
+      tslBody.appendChild(row);
+    }
+
+    document.getElementById('results').classList.add('show');
+    document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function resetCalc() {
+    document.getElementById('stockName').value = '';
+    document.getElementById('buyPrice').value = '';
+    document.getElementById('capital').value = '';
+    document.getElementById('slPct').value = '1.5';
+    document.getElementById('tgtPct').value = '2.5';
+    document.getElementById('results').classList.remove('show');
+    // Reset leverage
+    document.querySelectorAll('.lev-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.lev-btn')[0].classList.add('active');
+    leverage = 1;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+</body>
+</html>
